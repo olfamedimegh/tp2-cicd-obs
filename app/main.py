@@ -7,7 +7,7 @@ from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
 # Initialise OTel (export OTLP -> OTel Collector)
-import opentelemetry_bootstrap  # noqa: F401
+from . import opentelemetry_bootstrap  # noqa: F401
 
 app = Flask(__name__)
 FlaskInstrumentor().instrument_app(app)
