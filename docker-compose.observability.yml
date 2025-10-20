@@ -1,0 +1,69 @@
+version: "3.8"
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector:0.103.0
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./otel-collector-config.yml:/etc/otel-collector-config.yml:ro
+    ports:
+      - "4318:4318"   # OTLP HTTP
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  loki:
+    image: grafana/loki:2.9.8
+    command: ["-config.file=/etc/loki/config.yml"]
+    volumes:
+      - ./loki-config.yml:/etc/loki/config.yml:ro
+    ports:
+      - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:2.9.8
+    command: ["-config.file=/etc/promtail/config.yml"]
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/log:/var/log:ro
+
+  tempo:
+    image: grafana/tempo:2.5.0
+    command: ["-config.file=/etc/tempo/config.yml"]
+    volumes:
+      - ./tempo-config.yml:/etc/tempo/config.yml:ro
+    ports:
+      - "3200:3200" # Tempo API
+      - "4317:4317" # OTLP gRPC (optionnel)
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+
+  app:
+    build: .
+    environment:
+      - OTLP_ENDPOINT=http://otel-collector:4318
+      - SERVICE_NAME=tp2-flask-app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - otel-collector

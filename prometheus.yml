@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 10s
+
+scrape_configs:
+  - job_name: "otel-collector"
+    static_configs:
+      - targets: ["otel-collector:8889"]  # métriques collector (si activées)
+
+  - job_name: "app"
+    static_configs:
+      - targets: ["otel-collector:9464"]  # OTel Collector expose métriques app -> Prom
